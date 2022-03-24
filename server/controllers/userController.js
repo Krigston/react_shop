@@ -1,20 +1,16 @@
-const ApiError = require("../error/ApiError.js");
+const ApiError = require("../error/ApiError");
 const bcrypt = require("bcrypt"); //импортируем для шифрования паролей пользователей
 const jwt = require("jsonwebtoken"); //импортируем jsonwebtoken, для jwt токена
 const { User, Basket } = require("../models/models"); //импортируем модель пользователя
-
 //создаем токен для логина
 const generateJwt = (id, email, role) => {
-  return jwt.sign(
-    { id, email, role },
-    //   process.env.SECRET_KEY,
-    "random_secret_key123",
-    { expiresIn: "24h" }
-  );
+  return jwt.sign({ id, email, role }, "random_secret_key123", {
+    expiresIn: "24h",
+  });
 };
 
 class UserController {
-  async registration(req, res) {
+  async registration(req, res, next) {
     const { email, password, role } = req.body;
     if (!email || !password) {
       return next(ApiError.badRequest("Некорректный email или password"));
@@ -42,7 +38,7 @@ class UserController {
     //проверяем есть ли унас такой пользователь
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return next(ApiError.internal("Пользователь с таким именем не найден"));
+      return next(ApiError.internal("Пользователь не найден"));
     }
     //проверяем пароль
     let comparePassword = bcrypt.compareSync(password, user.password);
@@ -57,9 +53,7 @@ class UserController {
   async check(req, res, next) {
     const token = generateJwt(req.user.id, req.user.email, req.user.role);
     return res.json({ token });
-    }
-    
-  
+  }
 }
 
 module.exports = new UserController();
